@@ -54,6 +54,7 @@ You can provide either a distance matrix custom if you set the metric to pre-com
 ## Contributor
 
 * **Nicolas MINE** - *Initial work* - [Coni63](https://github.com/Coni63)
+* **btaba** - Implementation of Sinkhorn Knopp Algorithm - [btaba](https://github.com/btaba/sinkhorn_knopp)
 * **Paul Panzer** - *Support on StackOverflow*
 
 
