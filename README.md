@@ -2,7 +2,7 @@
 
 The repository propose a Python implementation of the Doubly Stochastic Neighbor Embedding on Spheres (DOSNES) published by Yao Lu, Zhirong Yang, Jukka Corander on [Arxiv](https://arxiv.org/abs/1609.01977) in Sep. 2016. It is based on the Matlab implemantion available on [Github](https://github.com/yaolubrain/DOSNES). 
 
-The principle of this model is to embed an high dimensionnal array on a 3D Sphere. The principle is the same as the TSNE but at every iteration, all embedded points are forced to be on a sphere. 
+The principle of this model is to embed an high dimensionnal datas on a 3D Sphere. The principle is the same as the TSNE but at every iteration, all embedded points are forced to be on a sphere. 
 
 ![rendering](https://github.com/Coni63/DOSNES/blob/master/images/iris.png)
 
@@ -49,6 +49,13 @@ plt.show()
 ```
 
 You can provide either a distance matrix custom if you set the metric to pre-computed, or provide you dataset and the metric to use (must be part of distances available with the function [pdist](https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.pdist.html) of scipy)
+
+## Results
+
+An very quick analysis of all parameter is present in the Notebook available in "analysis" folder. You can see below the evolution of the cost function and a gif of the training on the Iris dataset. Values are taken from the quick analysis.
+
+![cost](https://github.com/Coni63/DOSNES/blob/master/images/cost.png)
+![training](https://github.com/Coni63/DOSNES/blob/master/images/training.gif)
 
 
 ## Contributor

@@ -1,7 +1,14 @@
 import numpy as np
+import os
+import glob
+
+import shutil
 
 from scipy.spatial.distance import squareform, pdist
 from scipy.special import xlogy
+
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 from . import sinkhorn_knopp as skp
 
@@ -21,7 +28,7 @@ class DOSNES():
                  max_iter_skp = 1e3,
                  epsilon_skp = 1e-3,
                  momentum=0.5,
-                 final_momentum = 0.99,
+                 final_momentum = 0.3,
                  mom_switch_iter = 250,
                  max_iter = 1000,
                  learning_rate = 500,
@@ -95,6 +102,7 @@ class DOSNES():
         self.verbose = verbose
         self.random_state = random_state
         self.verbose_freq = verbose_freq
+        self.cost = []
         np.random.seed(random_state)
 
     def _fit(self, X):
@@ -117,7 +125,6 @@ class DOSNES():
         n = X.shape[0]
         momentum = self.momentum
         MACHINE_EPSILON = np.finfo(np.double).eps
-        min_cost = 1e10
 
         if self.metric == "precomputed":
             pass
@@ -176,19 +183,19 @@ class DOSNES():
             r_mean = np.mean(rad)
             ydata *= (r_mean / rad).reshape(-1, 1)
 
-            # cost = const - np.sum(xlogy(P, Q))
-            # if cost < min_cost:
-            #     min_cost = cost
-            #     self.embedding = ydata / np.sqrt(np.sum(ydata ** 2, axis=1)).reshape(-1, 1)
-
             if iter == self.mom_switch_iter:
                 momentum = self.final_momentum
 
-            if iter % self.verbose_freq == 0 and self.verbose == 1:
+            if iter % self.verbose_freq == 0:
                 cost = const - np.sum(xlogy(P, Q))
-                print("Iteration {} : error is {}".format(iter, cost))
+                self.cost.append((iter, cost))
+                self.embedding = ydata / np.sqrt(np.sum(ydata ** 2, axis=1)).reshape(-1, 1)
+                if self.verbose == 1:
+                    print("Iteration {} : error is {}".format(iter, cost))
+                self._render(iter, cost)
 
         self.embedding = ydata / np.sqrt(np.sum(ydata ** 2, axis=1)).reshape(-1, 1)
+        self._make_gif(self.filename)
 
 
     def _set_doubly_stochastic(self, D):
@@ -210,7 +217,7 @@ class DOSNES():
         return P
 
 
-    def fit_transform(self, X):
+    def fit_transform(self, X, y = None, filename = "training.gif"):
         """Fit X into an sperical embedded space and return that transformed
         output.
 
@@ -219,17 +226,21 @@ class DOSNES():
         X : array, shape (n_samples, n_features) or (n_samples, n_samples)
             If the metric is 'precomputed' X must be a square distance
             matrix. Otherwise it contains a sample per row.
+        y : array, shape (n_samples, 1)
+            Classes used for color in rendering
 
         Returns
         -------
         X_new : array, shape (n_samples, 3)
             Embedding of the training data in 3-dimensional space.
         """
+        self.filename = filename
+        self.y = y
         self._fit(X)
         return self.embedding
 
 
-    def fit(self, X):
+    def fit(self, X, y = None, filename = "training.gif"):
         """Fit X into an embedded space.
 
         Parameters
@@ -237,6 +248,35 @@ class DOSNES():
         X : array, shape (n_samples, n_features) or (n_samples, n_samples)
             If the metric is 'precomputed' X must be a square distance
             matrix. Otherwise it contains a sample per row.
+        y : array, shape (n_samples, 1)
+            Classes used for color in rendering
         """
+        self.filename = filename
+        self.y = y
         self.fit_transform(X)
         return self
+
+    def _render(self, iter, cost, path=""):
+        if not os.path.isdir("temp"):
+            os.mkdir("temp")
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+        if self.y is not None:
+            ax.scatter(self.embedding[:, 0], self.embedding[:, 1], self.embedding[:, 2], c=self.y, cmap=plt.cm.Set1)
+        else:
+            ax.scatter(self.embedding[:, 0], self.embedding[:, 1], self.embedding[:, 2])
+        ax.set_xlim(-1,1)
+        ax.set_ylim(-1,1)
+        ax.set_zlim(-1, 1)
+        plt.title("Iteration {} - Cost {:.4f}".format(iter, cost))
+        plt.savefig("temp/iter{0:03d}.png".format(iter))
+        plt.close('all')
+
+    def _make_gif(self, filename):
+        images = []
+        import imageio
+        for img in glob.glob("temp/iter*.png"):
+            images.append(imageio.imread(img))
+        imageio.mimsave(filename, images)
+        shutil.rmtree("temp")
+
